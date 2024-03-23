@@ -4,10 +4,10 @@
 #include <list>
 #include <set>
 
-// teste
-
 std::set<int> links;
 int n_clusters = 0;
+int nv_floresta = 0;
+int na_floresta = 0;
 
 class Aresta_stack {
     private:
@@ -24,6 +24,7 @@ class Aresta_stack {
 
 std::stack<Aresta_stack> _pilha;
 std::set<std::set<int> > clusters;
+std::set<std::set<int> > floresta;
 
 class Vertice {
     private: 
@@ -64,6 +65,7 @@ class Vertice {
 
 void get_clusters(std::vector<Vertice *> grafo, int u, int v) {
     std::set<int> vertices_cluster;
+    
     n_clusters++;
     while(_pilha.top().get_vert1() != u || _pilha.top().get_vert2() != v) {
         vertices_cluster.insert(_pilha.top().get_vert1());
@@ -154,7 +156,8 @@ int main() {
         }
     }
 
-    printf("%lu\n", links.size());
+    int tam_links = links.size();
+    printf("%d\n", tam_links);
     for(std::set<int>::iterator itr = links.begin(); itr != links.end(); itr++) {
         printf("%d\n", *itr);
     }
@@ -171,11 +174,20 @@ int main() {
     printf("%d\n", n_clusters);
 
     int i = 1;
+    int n_arestas_floresta = 0;
 
     for(std::set<std::set<int> >::iterator itr1 = clusters.begin(); itr1 != clusters.end(); itr1++) {
         printf("%d %lu ", n_vertices+i, itr1->size());
+
         std::set<int>::iterator itr = itr1->begin();
         while (itr != itr1->end()) {
+            if(links.find(*itr) != links.end()) {
+                std::set<int> elem_floresta;
+                elem_floresta.insert(n_vertices+i);
+                elem_floresta.insert(*itr);
+                floresta.insert(elem_floresta);
+                n_arestas_floresta++;
+            }
             printf("%d ", *itr);
             itr++;
         }
@@ -183,13 +195,8 @@ int main() {
         i++;
     }
 
-    // for(int i = 0; i < clusters.size(); i++) {
-    //     printf("%d %lu ", n_vertices, clusters[i].size());
-    //     std::set<int>::iterator itr = clusters[i].begin();
-    //     while(itr != clusters[i].end()) {
-    //         printf("%d ", *itr);
-    //         itr++;
-    //     }
-    //     printf("\n");
-    // }
+    printf("%d %d\n", n_clusters+tam_links, n_arestas_floresta);
+    for(std::set<std::set <int> >::iterator itr = floresta.begin(); itr != floresta.end(); itr++) {
+        printf("%d %d\n", *(itr->begin()), *(itr->rbegin()));
+    }
 }
