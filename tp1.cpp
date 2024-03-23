@@ -4,6 +4,8 @@
 #include <list>
 #include <set>
 
+// teste
+
 std::set<int> links;
 int n_clusters = 0;
 
@@ -24,7 +26,7 @@ std::stack<Aresta_stack> _pilha;
 std::set<std::set<int> > clusters;
 
 class Vertice {
-    private:
+    private: 
         int _rotulo;
         bool _visited;
         int _pai;
