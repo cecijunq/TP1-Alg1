@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <stack>
-#include <list>
 #include <set>
 
 std::set<int> links;
@@ -123,7 +122,7 @@ void dfs(std::vector<Vertice *> grafo, int index_vertice, int pai, int tempo) {
         }
     }
 
-    if(pai == -1 && corrente->get_filhos() > 1) {
+    if(pai == -1 && (corrente->get_filhos() > 1 || corrente->get_filhos() == 0)) {
         links.insert(index_vertice+1);
         grafo[index_vertice]->set_eh_link();        
     }
@@ -150,9 +149,20 @@ int main() {
         grafo[vertice2-1]->add_adj(vertice1);
     }
 
+    std::set<int> vertices_cluster;
     for(int i = 0; i < n_vertices; i++) {
         if(grafo[i]->get_visited() == false) {
-            dfs(grafo, i, i-1, tempo);
+            if(_pilha.size() != 0) {
+                while(!_pilha.empty()) {
+                    vertices_cluster.insert(_pilha.top().get_vert1());
+                    vertices_cluster.insert(_pilha.top().get_vert2());
+                    _pilha.pop();
+                }
+                clusters.insert(vertices_cluster);
+                n_clusters++;
+            }
+
+            dfs(grafo, i, -1, tempo);
         }
     }
 
@@ -162,18 +172,22 @@ int main() {
         printf("%d\n", *itr);
     }
 
-    std::set<int> vertices_cluster;
-    while(!_pilha.empty()) {
-        vertices_cluster.insert(_pilha.top().get_vert1());
-        vertices_cluster.insert(_pilha.top().get_vert2());
-        _pilha.pop();
+    // std::set<int> vertices_cluster;
+    if(_pilha.size() > 0) {
+        std::set<int> vertices_cluster;
+        while(!_pilha.empty()) {
+            vertices_cluster.insert(_pilha.top().get_vert1());
+            vertices_cluster.insert(_pilha.top().get_vert2());
+            _pilha.pop();
+        }
+        clusters.insert(vertices_cluster);
+        n_clusters++;
     }
-    clusters.insert(vertices_cluster);
-    n_clusters++;
 
     printf("%d\n", n_clusters);
 
     int i = 1;
+    int j = 1;
     int n_arestas_floresta = 0;
 
     for(std::set<std::set<int> >::iterator itr1 = clusters.begin(); itr1 != clusters.end(); itr1++) {
@@ -188,10 +202,12 @@ int main() {
                 floresta.insert(elem_floresta);
                 n_arestas_floresta++;
             }
-            printf("%d ", *itr);
+            if(j == itr1->size()) printf("%d\n", *itr);
+            else printf("%d ", *itr);
+            j++;
             itr++;
         }
-        printf("\n");
+        j = 1;
         i++;
     }
 
