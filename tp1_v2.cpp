@@ -55,7 +55,7 @@ void dfs(std::vector<std::vector<int> > grafo, int index_vertice, int pai, int t
     tempo += 1;
     _abertura[index_vertice] = tempo;
     _low[index_vertice] = tempo;
-    std::vector<int> adjacentes = grafo[index_vertice];
+    std::vector<int>& adjacentes = grafo[index_vertice];
 
     // percorre todos os vértices adjacentes do vértice corrente
     for(int i = 0; i < adjacentes.size(); i++) {
