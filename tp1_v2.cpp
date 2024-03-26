@@ -3,6 +3,12 @@
 #include <stack>
 #include <set>
 
+// cria os vectors que armazenam as informações fundamentais
+std::vector<int> _abertura;
+std::vector<int> _low;
+std::vector<int> _pai;
+std::vector<int> _filhos;
+
 // cria o set que armazenará quais vértices são links
 std::set<int> links;
 // contador do número de clusters que o grafo tem
@@ -26,33 +32,6 @@ std::stack<Aresta_stack> _pilha; // armazena as arestas que formarão um cluster
 std::set<std::set<int> > clusters; // armazena os clusters do grafo
 std::set<std::set<int> > floresta; // armazena a floresta
 
-class Vertice {
-    // armazena as informações de cada vértice do grafo
-    private: 
-        int _rotulo;
-        std::vector<int> _adjacentes;
-        int _abertura;
-        int _low;
-        int _filhos;
-    
-    public:
-        Vertice(int rotulo) {
-            _rotulo = rotulo;
-            _abertura = 0;
-            _filhos = 0;
-        }
-        int get_rotulo() { return _rotulo; }
-        void set_abertura(int abertura) { _abertura = abertura; }
-        int get_abertura() { return _abertura; }
-        void set_low(int low) { _low = low; }
-        int get_low() { return _low; }
-        void add_adj(int adjacente) {_adjacentes.push_back(adjacente); }
-        std::vector<int> get_adj() { return _adjacentes; }
-        int get_filhos() { return _filhos; }
-        void set_filhos() { _filhos++; }
-
-};
-
 // desempilha a pilha (a cada execução dessa função, recupera-se um cluster)
 void get_clusters(int u, int v) {
     std::set<int> vertices_cluster;
@@ -70,49 +49,53 @@ void get_clusters(int u, int v) {
     clusters.insert(vertices_cluster); // insere o cluster no set 'clusters'
 }
 
+void dfs(std::vector<std::vector<int> > grafo, int index_vertice, int pai, int tempo) {
 
-void dfs(std::vector<Vertice *> grafo, int index_vertice, int pai, int tempo) {
-    
-    tempo++;
-    grafo[index_vertice]->set_abertura(tempo);
-    grafo[index_vertice]->set_low(tempo);
-    std::vector<int> adjacentes = grafo[index_vertice]->get_adj();
+    // atribui os valores de abertura e de low do vértice que está sendo visitado pela primeira vez
+    tempo += 1;
+    _abertura[index_vertice] = tempo;
+    _low[index_vertice] = tempo;
+    std::vector<int> adjacentes = grafo[index_vertice];
 
-    Vertice *corrente = grafo[index_vertice];
+    // percorre todos os vértices adjacentes do vértice corrente
     for(int i = 0; i < adjacentes.size(); i++) {
-        Vertice *proximo = grafo[adjacentes[i]-1];
+        int proximo = adjacentes[i];
 
-        if(proximo->get_abertura() == 0) {
-            corrente->set_filhos();
-            _pilha.push(Aresta_stack(corrente->get_rotulo(), proximo->get_rotulo()));
+        // se o vértice adjacente ainda não foi visitado
+        if(_abertura[proximo-1] == 0) {
+            _filhos[index_vertice] += 1;
+            _pai[proximo-1] = index_vertice+1; // define o pai do vértice adjacente
+            // adiciona a aresta à pilha que guarda os clusters
+            _pilha.push(Aresta_stack(index_vertice+1, proximo));
 
-            dfs(grafo, adjacentes[i]-1, index_vertice+1, tempo);
+            dfs(grafo, proximo-1, index_vertice+1, tempo);
 
-            if(proximo->get_low() < corrente->get_low()) {
-                int novo_low = proximo->get_low();
-                corrente->set_low(novo_low);
+            if(_low[proximo-1] < _low[index_vertice]) {
+                _low[index_vertice] = _low[proximo-1];
             }
             
-            if(pai != -1 && proximo->get_low() >= corrente->get_abertura()) {
+            // encontra um link (vértice de corte)
+            if(_pai[index_vertice] != -1 && _low[proximo-1] >= _abertura[index_vertice]) {
                 links.insert(index_vertice+1);               
             }
 
-            if((corrente->get_abertura() == 1 && corrente->get_filhos() > 1) || (corrente->get_abertura() > 1 && proximo->get_low() >= corrente->get_abertura())) {
-                get_clusters(corrente->get_rotulo(), proximo->get_rotulo());
+            // desempilha, resgatando um cluster
+            if((_abertura[index_vertice] == 1 && _filhos[index_vertice] > 1) || (_abertura[index_vertice] > 1 && _low[proximo-1] >= _abertura[index_vertice])) {
+                get_clusters(index_vertice+1, proximo);
             }
 
-        } else if(proximo->get_rotulo() != pai) {
-            if(proximo->get_abertura() < corrente->get_low()) {
-                int novo_low = proximo->get_abertura();
-                corrente->set_low(novo_low);
+        } else if(proximo != _pai[index_vertice]) {
+            if(_abertura[proximo-1] < _low[index_vertice]) {
+                _low[index_vertice] = _abertura[proximo-1];
             }
-            if(proximo->get_abertura() < corrente->get_abertura()) {
-                _pilha.push(Aresta_stack(corrente->get_rotulo(), proximo->get_rotulo()));
+            if(_abertura[proximo-1] < _abertura[index_vertice]) {
+                _pilha.push(Aresta_stack(index_vertice, proximo));
             }
         }
     }
 
-    if(pai == -1 && (corrente->get_filhos() > 1 || corrente->get_filhos() == 0)) {
+    // encontra um link (vértice de corte)
+    if(_pai[index_vertice] == -1 && (_filhos[index_vertice] > 1 || _filhos[index_vertice] == 0)) {
         links.insert(index_vertice+1);      
     }
 }
@@ -123,27 +106,33 @@ int main() {
     int tempo = 0;
     scanf("%d %d", &n_vertices, &n_arestas); // salva os valores das variáveis 'n_vertices' e 'n_arestas'
 
-    std::vector<Vertice *> grafo;
+    std::vector<std::vector<int> > grafo;
 
     // adiciona os vértices no grafo
     for(int i = 0; i < n_vertices; i++) {
-        Vertice *node = new Vertice(i+1);
-        grafo.push_back(node);
+        std::vector<int> adjacentes;
+        grafo.push_back(adjacentes);
+
+        _abertura.push_back(0);
+        _low.push_back(0);
+        _pai.push_back(-1);
+        _filhos.push_back(0);
     }
 
+    int i;
     // salva os vértices adjacentes de cada vértice no vector "_adjacentes" de cada nó do grafo
-    for(int i = 0; i < n_arestas; i++) {
+    for(i = 0; i < n_arestas; i++) {
         int vertice1, vertice2;
         scanf("%d %d", &vertice1, &vertice2);
 
-        grafo[vertice1-1]->add_adj(vertice2);
-        grafo[vertice2-1]->add_adj(vertice1);
+        grafo[vertice1-1].push_back(vertice2);
+        grafo[vertice2-1].push_back(vertice1);
     }
 
     // chama a função dfs para cada vértice que ainda não foi visitado
     std::set<int> vertices_cluster;
-    for(int i = 0; i < n_vertices; i++) {
-        if(grafo[i]->get_abertura() == 0) {
+    for(i = 0; i < n_vertices; i++) {
+        if(_abertura[i] == 0) {
             // quando encontra um vértice que ainda não foi visitado, checa se _pilha tá vazia. Se não estiver, desempilha o que ainda está presente, criando um novo cluster
             if(_pilha.size() != 0) {
                 while(!_pilha.empty()) {
@@ -179,15 +168,17 @@ int main() {
 
     printf("%d\n", n_clusters); // imprime o número de clusters que compõe os grafo
 
-    int i = 1;
+    i = 1;
     int j = 1;
     int n_arestas_floresta = 0; // contabiliza o número de arestas da floresta
 
+    std::set<std::set<int> >::iterator itr1;
+    std::set<int>::iterator itr;
     // percorre o set 'clusters', para imprimir quais vértices compõe cada cluster
-    for(std::set<std::set<int> >::iterator itr1 = clusters.begin(); itr1 != clusters.end(); itr1++) {
+    for(itr1 = clusters.begin(); itr1 != clusters.end(); itr1++) {
         printf("%d %lu ", n_vertices+i, itr1->size());
 
-        std::set<int>::iterator itr = itr1->begin(); 
+        itr = itr1->begin(); 
         // percorre cada set que compõe o set 'clusters' e se o elemento percorrido for um link, adiciona o link e o número de representa o cluster que está sendo percorrido no set 'floresta'
         while (itr != itr1->end()) {
             if(links.find(*itr) != links.end()) {
@@ -208,11 +199,7 @@ int main() {
 
     // imprime cada aresta que compõe a floresta
     printf("%d %d\n", n_clusters+tam_links, n_arestas_floresta);
-    for(std::set<std::set <int> >::iterator itr = floresta.begin(); itr != floresta.end(); itr++) {
-        printf("%d %d\n", *(itr->begin()), *(itr->rbegin()));
-    }
-
-    for(int i = 0; i < n_vertices; i++) {
-        delete grafo[i];
+    for(itr1 = floresta.begin(); itr1 != floresta.end(); itr1++) {
+        printf("%d %d\n", *(itr1->begin()), *(itr1->rbegin()));
     }
 }
