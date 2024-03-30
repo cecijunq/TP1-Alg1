@@ -80,34 +80,34 @@ void dfs(std::vector<Vertice *> grafo, int index_vertice, int pai, int tempo) {
 
     Vertice *corrente = grafo[index_vertice];
     for(int i = 0; i < adjacentes.size(); i++) {
-        Vertice *proximo = grafo[adjacentes[i]-1];
+        // Vertice *proximo = grafo[adjacentes[i]-1];
 
-        if(proximo->get_abertura() == 0) {
+        if(grafo[adjacentes[i]-1]->get_abertura() == 0) {
             corrente->set_filhos();
-            _pilha.push(Aresta_stack(corrente->get_rotulo(), proximo->get_rotulo()));
+            _pilha.push(Aresta_stack(corrente->get_rotulo(), grafo[adjacentes[i]-1]->get_rotulo()));
 
             dfs(grafo, adjacentes[i]-1, index_vertice+1, tempo);
 
-            if(proximo->get_low() < corrente->get_low()) {
-                int novo_low = proximo->get_low();
+            if(grafo[adjacentes[i]-1]->get_low() < corrente->get_low()) {
+                int novo_low = grafo[adjacentes[i]-1]->get_low();
                 corrente->set_low(novo_low);
             }
             
-            if(pai != -1 && proximo->get_low() >= corrente->get_abertura()) {
+            if(pai != -1 && grafo[adjacentes[i]-1]->get_low() >= corrente->get_abertura()) {
                 links.insert(index_vertice+1);               
             }
 
-            if((corrente->get_abertura() == 1 && corrente->get_filhos() > 1) || (corrente->get_abertura() > 1 && proximo->get_low() >= corrente->get_abertura())) {
-                get_clusters(corrente->get_rotulo(), proximo->get_rotulo());
+            if((corrente->get_abertura() == 1 && corrente->get_filhos() > 1) || (corrente->get_abertura() > 1 && grafo[adjacentes[i]-1]->get_low() >= corrente->get_abertura())) {
+                get_clusters(corrente->get_rotulo(), grafo[adjacentes[i]-1]->get_rotulo());
             }
 
-        } else if(proximo->get_rotulo() != pai) {
-            if(proximo->get_abertura() < corrente->get_low()) {
-                int novo_low = proximo->get_abertura();
+        } else if(grafo[adjacentes[i]-1]->get_rotulo() != pai) {
+            if(grafo[adjacentes[i]-1]->get_abertura() < corrente->get_low()) {
+                int novo_low = grafo[adjacentes[i]-1]->get_abertura();
                 corrente->set_low(novo_low);
             }
-            if(proximo->get_abertura() < corrente->get_abertura()) {
-                _pilha.push(Aresta_stack(corrente->get_rotulo(), proximo->get_rotulo()));
+            if(grafo[adjacentes[i]-1]->get_abertura() < corrente->get_abertura()) {
+                _pilha.push(Aresta_stack(corrente->get_rotulo(), grafo[adjacentes[i]-1]->get_rotulo()));
             }
         }
     }
